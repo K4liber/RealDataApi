@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Real Data</title>
+        <link rel="stylesheet" href="static/leaflet.css"/>
+        <script src="static/leaflet.js"></script>
+        <link rel="stylesheet" href="static/style.css">
+    </head>
+    <body>
+        <div id="mapid"></div>
+        <div id="info">
+          Last localization timestamp: {{data.timestamp}}
+        </div>
+        <script src="static/load_map.js"></script>
+        <script>
+            var lat = '{{ data.location.lat }}'
+            var lon = '{{ data.location.lon }}'
+            load_map(lat, lon);
+        </script>
+    </body>
+</html>
