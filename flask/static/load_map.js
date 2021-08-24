@@ -16,6 +16,6 @@ function load_map(lat, lon, last_timestamp) {
         "<div style='margin: 0 auto;'>" +
         "<img style='width: 80px;' src='static/images/jbielecki.jpeg'/>" +
         "<br>Jan Bielecki" +
-        "<br>" + last_timestamp ? last_timestamp : '' +
+        "<br>" + (last_timestamp ? last_timestamp : '') +
         "</div>");
 }
