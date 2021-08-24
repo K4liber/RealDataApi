@@ -17,7 +17,8 @@
         <script>
             var lat = '{{ data.location.lat }}'
             var lon = '{{ data.location.lon }}'
-            load_map(lat, lon);
+            var last_timestamp = '{{ data.timestamp }}'
+            load_map(lat, lon, last_timestamp);
         </script>
     </body>
 </html>
