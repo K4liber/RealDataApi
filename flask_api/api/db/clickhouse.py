@@ -15,5 +15,5 @@ class Clickhouse(DBAdapter):
 
     def send_location(self, device_id: str, localization: Localization):
         self.client.execute(f"INSERT INTO {self._db_name}.localization (*) values "
-                            f"('{device_id}', '{datetime.now().strftime('YYYY-MM-DD hh:mm:ss')}', "
+                            f"('{device_id}', '{datetime.now().strftime('%Y-%m-%d %H:%M:%S')}', "
                             f"{localization.lon}, {localization.lat})")
