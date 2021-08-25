@@ -2,7 +2,7 @@ version: '3.7'
 services:
   api_flask:
     container_name: api_flask
-    build: ./flask
+    build: ./flask_api
   api_nginx:
     container_name: api_nginx
     build: ./nginx

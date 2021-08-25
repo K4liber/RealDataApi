@@ -1,31 +1,17 @@
 import os
-from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Optional
 
 import flask
 from flask import request, render_template
 
+from api.data.entity import Data, Localization
+from api.db.clickhouse import Clickhouse
 
 ASSETS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'static')
 app = flask.Flask(__name__, template_folder=ASSETS_DIR, static_folder=ASSETS_DIR)
 app.config["DEBUG"] = True
-
-
-@dataclass
-class Location:
-    lat: float
-    lon: float
-
-
-@dataclass
-class Data:
-    location: Location
-    timestamp: Optional[datetime]
-    altitude: Optional[float]
-
-
-data = Data(Location(0.0, 0.0), None, None)
+clickhouse_client = Clickhouse()
+data = Data(Localization(0.0, 0.0), None, None)
 
 
 @app.route("/")
@@ -37,10 +23,11 @@ def mapview():
 def location():
     latitude = float(request.args.get('latitude', "0.0"))
     longitude = float(request.args.get('longitude', "0.0"))
-    data.location.lon = longitude
-    data.location.lat = latitude
+    data.localization.lon = longitude
+    data.localization.lat = latitude
     data.timestamp = datetime.now(tz=timezone.utc)
-    return str(data.location)
+    clickhouse_client.send_location('any', data.localization)
+    return str(data.localization)
 
 
 app.run(host='0.0.0.0')

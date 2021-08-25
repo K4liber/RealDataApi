@@ -12,8 +12,8 @@
         <div id="mapid"></div>
         <script src="static/load_map.js"></script>
         <script>
-            var lat = '{{ data.location.lat }}'
-            var lon = '{{ data.location.lon }}'
+            var lat = '{{ data.localization.lat }}'
+            var lon = '{{ data.localization.lon }}'
             var last_timestamp = '{{ data.timestamp }}'
             load_map(lat, lon, last_timestamp);
         </script>
