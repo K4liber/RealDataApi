@@ -9,12 +9,11 @@ from api.db.interface import DBAdapter
 
 class Clickhouse(DBAdapter):
     def __init__(self):
-        self._user = os.getenv('CH_USER')
-        self._password = os.getenv('CH_PASSWORD')
-        self.client = Client(
-            'localhost', user=self._user, password=self._password, port=9000, database='real_data_prod')
+        self._host = os.getenv('CH_CLIENT_HOST')
+        self._db_name = os.getenv('CH_DB')
+        self.client = Client(self._host, database=self._db_name)
 
     def send_location(self, device_id: str, localization: Localization):
-        self.client.execute(f"INSERT INTO real_data_prod.localization (*) values "
-                            f"({device_id}, '{datetime.now().strftime('YYYY-MM-DD hh:mm:ss')}', "
+        self.client.execute(f"INSERT INTO {self._db_name}.localization (*) values "
+                            f"('{device_id}', '{datetime.now().strftime('YYYY-MM-DD hh:mm:ss')}', "
                             f"{localization.lon}, {localization.lat})")
