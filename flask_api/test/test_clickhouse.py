@@ -16,8 +16,3 @@ class TestClickhouse(TestCase):
     def test_insert(self):
         self.client.execute(f"INSERT INTO real_data_prod.localization (*) values "
                             f"('imei', '{datetime.now().strftime('YYYY-MM-DD hh:mm:ss')}', 0.1, 0.1)")
-
-    def test_any(self):
-        import subprocess
-        output = subprocess.check_output("ip route show | awk '/default/ {print $3}'", shell=True, encoding='UTF-8')
-        print(output)
