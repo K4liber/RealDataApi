@@ -5,6 +5,7 @@ from clickhouse_driver import Client
 
 from api.data.entity import Localization
 from api.db.interface import DBAdapter
+from api.utils import logger
 
 
 class Clickhouse(DBAdapter):
@@ -19,9 +20,11 @@ class Clickhouse(DBAdapter):
                             f"{localization.lon}, {localization.lat})")
 
     def get_localization(self, device_id: str) -> Localization:
-        localization_list = self.client.execute(
-            f"SELECT timestamp, lon, lat FROM {self._db_name}.localization "
-            f"WHERE id = '{device_id}' order by timestamp desc limit 1")
+        sql_cmd = \
+            f"SELECT timestamp, lon, lat FROM {self._db_name}.localization " + \
+            f"WHERE id = '{device_id}' order by timestamp desc limit 1"
+        logger.info(f'SQL CMD: {sql_cmd}')
+        localization_list = self.client.execute(sql_cmd)
         # The method returns List of Tuples
         localization = Localization(
             timestamp=localization_list[0][0],

@@ -13,7 +13,8 @@ clickhouse_client = Clickhouse()
 
 @app.route('/get_localization', methods=['GET'])
 def get_localization():
-    localization = clickhouse_client.get_localization('any')
+    device_id = request.args.get('device_id', 'any')
+    localization = clickhouse_client.get_localization(device_id)
     return str(localization.to_json())
 
 
@@ -22,7 +23,7 @@ def location():
     latitude = float(request.args.get('latitude', "0.0"))
     longitude = float(request.args.get('longitude', "0.0"))
     altitude = float(request.args.get('altitude', "0.0"))
-    device_id = request.args.get('device_id', "0.0")
+    device_id = request.args.get('device_id', "any")
     data = Data(
         device_id=device_id,
         altitude=altitude,
