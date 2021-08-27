@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime, timezone
 
 import flask
@@ -6,9 +7,23 @@ from flask import request
 from api.data.entity import Data, Localization
 from api.db.clickhouse import Clickhouse
 
+FORMAT = '%(asctime)-15s %(level)-10s %(message)s'
+logging.basicConfig(format=FORMAT)
+
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
+app.logger = logging.getLogger('real_data_api')
 clickhouse_client = Clickhouse()
+
+
+@app.route('/get_device_ids', methods=['GET'])
+def get_device_ids():
+    try:
+        device_ids_list = clickhouse_client.get_device_ids()
+    except BaseException as be:
+        return f'API exception: {be}', 500
+
+    return str(device_ids_list)
 
 
 @app.route('/get_localization', methods=['GET'])

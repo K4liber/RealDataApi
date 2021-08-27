@@ -9,6 +9,8 @@ services:
     networks:
       - default
       - ch_ntw
+    depends_on:
+      - ch_client
 
   api_nginx:
     container_name: api_nginx
@@ -37,6 +39,8 @@ services:
       - infinity
     networks:
       - ch_ntw
+    depends_on:
+      - ch_server
 
 networks:
   ch_ntw:

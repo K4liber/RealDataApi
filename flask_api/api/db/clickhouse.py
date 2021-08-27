@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from typing import List
 
 from clickhouse_driver import Client
 
@@ -32,3 +33,10 @@ class Clickhouse(DBAdapter):
             lat=localization_list[0][2]
         )
         return localization
+
+    def get_device_ids(self) -> List[str]:
+        sql_cmd = f"SELECT DISTINCT id from {self._db_name}.localization  order by timestamp desc limit 10"
+        # The method returns List of Tuples
+        device_ids_list = self.client.execute(sql_cmd)
+        logger.info(f'SQL CMD: {sql_cmd}')
+        return [device_id_tuple[0] for device_id_tuple in device_ids_list]

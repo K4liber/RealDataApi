@@ -1,5 +1,5 @@
 from abc import abstractmethod
-from typing import Optional
+from typing import Optional, List
 
 from api.data.entity import Localization
 
@@ -10,4 +10,7 @@ class DBAdapter:
         pass
 
     def get_localization(self, device_id: str) -> Optional[Localization]:
+        pass
+
+    def get_device_ids(self) -> List[str]:
         pass
