@@ -6,6 +6,7 @@ from flask import request
 
 from api.data.entity import Data, Localization
 from api.db.clickhouse import Clickhouse
+from api.data.utils import Default
 
 FORMAT = '%(asctime)-15s %(level)-10s %(message)s'
 logging.basicConfig(format=FORMAT)
@@ -16,6 +17,20 @@ app.logger = logging.getLogger('real_data_api')
 clickhouse_client = Clickhouse()
 
 
+@app.route('/get_devices_timestamps', methods=['GET'])
+def get_devices_timestamps():
+    try:
+        device_id_to_timestamp = clickhouse_client.get_device_id_to_timestamp()
+    except BaseException as be:
+        return f'API exception: {be}', 500
+
+    return str({
+        device_id: timestamp.strftime(Default.DATETIME_FORMAT)
+        for device_id, timestamp in device_id_to_timestamp.items()
+    })
+
+
+# TODO rm it - deprecated
 @app.route('/get_device_ids', methods=['GET'])
 def get_device_ids():
     try:
@@ -43,7 +58,7 @@ def location():
         device_id=device_id,
         altitude=altitude,
         localization=Localization(
-            lat=latitude, lon=longitude, timestamp=datetime.now(tz=timezone.utc)
+            lat=latitude, lon=longitude, timestamp_str=datetime.now(tz=timezone.utc).strftime(Default.DATETIME_FORMAT)
         )
     )
     clickhouse_client.send_localization(data.device_id, data.localization)

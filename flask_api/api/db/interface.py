@@ -1,5 +1,6 @@
 from abc import abstractmethod
-from typing import Optional, List
+from datetime import datetime
+from typing import Optional, List, Dict
 
 from api.data.entity import Localization
 
@@ -13,4 +14,7 @@ class DBAdapter:
         pass
 
     def get_device_ids(self) -> List[str]:
+        pass
+
+    def get_device_id_to_timestamp(self) -> Dict[str, datetime]:
         pass

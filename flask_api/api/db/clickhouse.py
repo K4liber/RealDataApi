@@ -1,12 +1,13 @@
 import os
 from datetime import datetime
-from typing import List
+from typing import List, Dict
 
 from clickhouse_driver import Client
 
 from api.data.entity import Localization
 from api.db.interface import DBAdapter
 from api.utils import logger
+from api.data.utils import Default
 
 
 class Clickhouse(DBAdapter):
@@ -28,7 +29,7 @@ class Clickhouse(DBAdapter):
         localization_list = self.client.execute(sql_cmd)
         # The method returns List of Tuples
         localization = Localization(
-            timestamp=localization_list[0][0],
+            timestamp_str=localization_list[0][0].strftime(Default.DATETIME_FORMAT),
             lon=localization_list[0][1],
             lat=localization_list[0][2]
         )
@@ -40,3 +41,14 @@ class Clickhouse(DBAdapter):
         device_ids_list = self.client.execute(sql_cmd)
         logger.info(f'SQL CMD: {sql_cmd}')
         return [device_id_tuple[0] for device_id_tuple in device_ids_list]
+
+    def get_device_id_to_timestamp(self) -> Dict[str, datetime]:
+        device_id_to_timestamp: Dict[str, datetime] = dict()
+        sql_cmd = f"select id, max(timestamp) from {self._db_name}.localization group by id limit 10"
+        logger.info(f'SQL CMD: {sql_cmd}')
+        devices_timestamps_list = self.client.execute(sql_cmd)
+        # The method returns List of Tuples
+        for device_timestamp_tuple in devices_timestamps_list:
+            device_id_to_timestamp[device_timestamp_tuple[0]] = device_timestamp_tuple[1]
+
+        return device_id_to_timestamp
