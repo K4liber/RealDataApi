@@ -8,12 +8,11 @@ from api.data.entity import Data, Localization
 from api.db.clickhouse import Clickhouse
 from api.data.utils import Default
 
-FORMAT = '%(asctime)-15s %(level)-10s %(message)s'
-logging.basicConfig(format=FORMAT)
 
+FORMAT = '%(asctime)-15s %(levelname)-10s %(message)s'
+logging.basicConfig(level=logging.INFO, format=FORMAT, force=True)
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
-app.logger = logging.getLogger('real_data_api')
 clickhouse_client = Clickhouse()
 
 
