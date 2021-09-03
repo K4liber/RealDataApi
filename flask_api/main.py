@@ -16,6 +16,38 @@ app.config["DEBUG"] = True
 clickhouse_client = Clickhouse()
 
 
+@app.route('/get_localizations', methods=['GET'])
+def get_localizations():
+    device_id = request.args.get('device_id', None)
+
+    if not device_id:
+        return f'get request is missing parameter "device_id"'
+
+    timestamp_from = request.args.get('from', None)
+    timestamp_to = request.args.get('to', None)
+
+    if timestamp_from:
+        try:
+            datetime.strptime(timestamp_from, '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            return f'parameter "from" should have format "2019-01-15 00:00:00"'
+
+    if timestamp_to:
+        try:
+            datetime.strptime(timestamp_to, '%Y-%m-%d %H:%M:%S')
+        except ValueError:
+            return f'parameter "to" should have format "2019-01-15 00:00:00"'
+
+    try:
+        localizations = clickhouse_client.get_localizations(device_id, timestamp_from, timestamp_to)
+    except BaseException as be:
+        return f'API exception: {be}', 500
+
+    return str([
+        localization.to_json() for localization in localizations
+    ])
+
+
 @app.route('/get_devices_timestamps', methods=['GET'])
 def get_devices_timestamps():
     try:

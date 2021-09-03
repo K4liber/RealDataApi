@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Optional
 
 from clickhouse_driver import Client
 
@@ -52,3 +52,24 @@ class Clickhouse(DBAdapter):
             device_id_to_timestamp[device_timestamp_tuple[0]] = device_timestamp_tuple[1]
 
         return device_id_to_timestamp
+
+    def get_localizations(self, device_id: str, timestamp_from: Optional[str],
+                          timestamp_to: Optional[str]) -> List[Localization]:
+        sql_cmd = f"select id, lat, lon, timestamp from {self._db_name}.localization " \
+                  f"where id = '{device_id}' order by timestamp"
+
+        if timestamp_from:
+            sql_cmd = sql_cmd + f" and timestamp > toDateTime('{timestamp_from}')"
+
+        if timestamp_to:
+            sql_cmd = sql_cmd + f" and timestamp < toDateTime('{timestamp_to}')"
+
+        logger.info(f'SQL CMD: {sql_cmd}')
+        localizations_list = self.client.execute(sql_cmd)
+        return [
+            Localization(
+                lat=localization_tuple[1],
+                lon=localization_tuple[2],
+                timestamp_str=localization_tuple[3].strftime(Default.DATETIME_FORMAT)
+            ) for localization_tuple in localizations_list
+        ]

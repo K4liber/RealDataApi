@@ -18,3 +18,7 @@ class DBAdapter:
 
     def get_device_id_to_timestamp(self) -> Dict[str, datetime]:
         pass
+
+    def get_localizations(self, device_id: str, timestamp_from: Optional[str],
+                          timestamp_to: Optional[str]) -> List[Localization]:
+        pass
