@@ -27,6 +27,8 @@ services:
   ch_server:
     container_name: ch_server
     build: ./clickhouse
+    environment:
+      - CLICKHOUSE_INIT_TIMEOUT=600
     volumes:
       - ./db:/var/lib/clickhouse
     networks:
