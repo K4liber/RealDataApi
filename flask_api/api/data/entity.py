@@ -10,9 +10,9 @@ from api.data.utils import Default
 @dataclass_json(letter_case=LetterCase.CAMEL)
 @dataclass
 class Localization:
-    lat: float
-    lon: float
-    timestamp_str: str
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    timestamp_str: Optional[str] = None
 
 
 @dataclass
