@@ -6,6 +6,7 @@ services:
     environment:
       - CH_CLIENT_HOST=ch_server
       - CH_DB=real_data
+      - SECRET_KEY=${SECRET_KEY}
     networks:
       - default
       - ch_ntw

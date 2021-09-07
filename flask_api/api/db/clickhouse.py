@@ -52,7 +52,7 @@ class Clickhouse(DBAdapter):
         if id_starts_with:
             sql_cmd = sql_cmd + f" where startsWith(id, '{id_starts_with}')"
 
-        sql_cmd = sql_cmd + f"group by id limit {limit}"
+        sql_cmd = sql_cmd + f" group by id limit {limit}"
         logger.info(f'SQL CMD: {sql_cmd}')
         devices_timestamps_list = self.client.execute(sql_cmd)
         # The method returns List of Tuples

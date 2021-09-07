@@ -5,10 +5,11 @@ import flask
 from flask import request
 from flask_restx import Api, Resource
 
-from api.data.entity import Data, Localization
+from api import SECRET_KEY
+from api.data.entity import Data, Localization, DeviceTimestamp
 from api.db.clickhouse import Clickhouse
 from api.data.utils import Default
-from api.model import localization_fields, device_to_timestamp_fields, location_fields
+from api.model import localization_fields, device_to_timestamp_fields
 
 FORMAT = '%(asctime)-15s %(levelname)-10s %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT, force=True)
@@ -19,7 +20,6 @@ clickhouse_client = Clickhouse()
 
 localization_model = api.model('Localization', localization_fields)
 device_to_timestamp_model = api.model('DeviceToTimestamp', device_to_timestamp_fields)
-location_model = api.model('Location', location_fields)
 
 
 @api.route('/get_localizations', endpoint='get_localizations')
@@ -60,7 +60,7 @@ class Localizations(Resource):
 @api.route('/get_devices_timestamps', endpoint='get_devices_timestamps')
 @api.doc(params={'id_starts_with': 'Start of the device`s ID (optional)'})
 class DevicesTimestamps(Resource):
-    @api.response(200, 'Success', device_to_timestamp_model, mimetype='application/json')
+    @api.response(200, 'Success', [device_to_timestamp_model], mimetype='application/json')
     def get(self):
         try:
             device_id_to_timestamp = clickhouse_client.get_device_id_to_timestamp(
@@ -69,15 +69,20 @@ class DevicesTimestamps(Resource):
         except BaseException as be:
             return f'API exception: {be}', 500
 
-        return str({
-            device_id: timestamp.strftime(Default.DATETIME_FORMAT)
-            for device_id, timestamp in device_id_to_timestamp.items()
-        })
+        sorted_values = {k: v for k, v in sorted(device_id_to_timestamp.items(), key=lambda item: item[1])}
+        return str(
+            [
+                DeviceTimestamp(
+                    device_id=device_id,
+                    timestamp_str=timestamp.strftime(Default.DATETIME_FORMAT)
+                ).to_json() for device_id, timestamp in sorted_values.items()
+            ]
+        )
 
 
 @api.route('/get_localization', endpoint='get_localization')
 @api.doc(params={'device_id': 'ID of the device'})
-class Localization(Resource):
+class GetLocalization(Resource):
     @api.response(200, 'Success', localization_model, mimetype='application/json')
     def get(self):
         device_id = request.args.get('device_id', None)
@@ -89,21 +94,29 @@ class Localization(Resource):
         return str(localization.to_json())
 
 
+upload_parser = api.parser()
+upload_parser.add_argument('latitude', type=float, location='form', required=True)
+upload_parser.add_argument('longitude', type=float, location='form', required=True)
+upload_parser.add_argument('altitude', type=float, location='form', required=True)
+upload_parser.add_argument('device_id', type=str, location='form', required=True)
+upload_parser.add_argument('secret_key', type=str, location='form', required=True)
+
+
 @api.route('/location', endpoint='location')
-@api.doc(params={
-    'latitude': 'Latitude of the device',
-    'longitude': 'Longitude of the device',
-    'altitude': 'Altitude of the device',
-    'device_id': 'ID of the device'
-})
 class Location(Resource):
+    @api.doc(params={
+        'latitude': 'Latitude of the device',
+        'longitude': 'Longitude of the device',
+        'altitude': 'Altitude of the device',
+        'device_id': 'ID of the device'
+    })
     @api.response(200, 'Success', localization_model, mimetype='application/json')
     def get(self):
         arg_names = {'latitude', 'longitude', 'altitude', 'device_id'}
         arg_name_to_values = dict()
 
         for arg_name in arg_names:
-            arg_name_to_values[arg_name] = request.args.get('latitude', None)
+            arg_name_to_values[arg_name] = request.args.get(arg_name, None)
 
         required_arg_names = {'latitude', 'longitude', 'altitude', 'device_id'}
 
@@ -124,11 +137,26 @@ class Location(Resource):
         return str(data.localization.to_json())
 
     @api.doc(description="Save location data to the database.")
-    @api.expect(location_model)
+    @api.expect(upload_parser)
     @api.response(500, 'Invalid values')
     @api.response(200, 'Success', localization_model, mimetype='application/json')
     def post(self):
-        return str({})
+        args = upload_parser.parse_args()
+
+        if not SECRET_KEY or SECRET_KEY != args['secret_key']:
+            return f'Wrong secret key = "{args["secret_key"]}"', 401
+
+        data = Data(
+            device_id=args['device_id'],
+            altitude=float(args['altitude']),
+            localization=args(
+                lat=float(args['latitude']),
+                lon=float(args['longitude']),
+                timestamp_str=datetime.now(tz=timezone.utc).strftime(Default.DATETIME_FORMAT)
+            )
+        )
+        clickhouse_client.send_localization(data.device_id, data.localization)
+        return str(data.localization.to_json()), 200
 
 
-app.run(host='0.0.0.0', port=5050)
+app.run(host='0.0.0.0', port=5000)
