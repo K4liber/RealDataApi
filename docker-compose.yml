@@ -6,6 +6,7 @@ services:
     environment:
       - CH_CLIENT_HOST=ch_server
       - CH_DB=real_data
+      - SECRET_KEY=${SECRET_KEY}
     networks:
       - default
       - ch_ntw
@@ -27,6 +28,8 @@ services:
   ch_server:
     container_name: ch_server
     build: ./clickhouse
+    environment:
+      - CLICKHOUSE_INIT_TIMEOUT=600
     volumes:
       - ./db:/var/lib/clickhouse
     networks:

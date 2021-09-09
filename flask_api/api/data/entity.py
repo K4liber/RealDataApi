@@ -7,12 +7,19 @@ from typing import Optional
 from api.data.utils import Default
 
 
-@dataclass_json(letter_case=LetterCase.CAMEL)
+@dataclass_json(letter_case=LetterCase.SNAKE)
+@dataclass
+class DeviceTimestamp:
+    device_id: str
+    timestamp_str: str
+
+
+@dataclass_json(letter_case=LetterCase.SNAKE)
 @dataclass
 class Localization:
-    lat: float
-    lon: float
-    timestamp_str: str
+    lat: Optional[float] = None
+    lon: Optional[float] = None
+    timestamp_str: Optional[str] = None
 
 
 @dataclass

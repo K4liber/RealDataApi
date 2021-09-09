@@ -26,8 +26,11 @@ class Clickhouse(DBAdapter):
             f"SELECT timestamp, lon, lat FROM {self._db_name}.localization " + \
             f"WHERE id = '{device_id}' order by timestamp desc limit 1"
         logger.info(f'SQL CMD: {sql_cmd}')
-        localization_list = self.client.execute(sql_cmd)
-        # The method returns List of Tuples
+        localization_list = self.client.execute(sql_cmd)  # The method returns List of Tuples
+
+        if len(localization_list) == 0:
+            return Localization()
+
         localization = Localization(
             timestamp_str=localization_list[0][0].strftime(Default.DATETIME_FORMAT),
             lon=localization_list[0][1],
@@ -42,9 +45,14 @@ class Clickhouse(DBAdapter):
         logger.info(f'SQL CMD: {sql_cmd}')
         return [device_id_tuple[0] for device_id_tuple in device_ids_list]
 
-    def get_device_id_to_timestamp(self) -> Dict[str, datetime]:
+    def get_device_id_to_timestamp(self, id_starts_with: Optional[str] = None, limit: int = 10) -> Dict[str, datetime]:
         device_id_to_timestamp: Dict[str, datetime] = dict()
-        sql_cmd = f"select id, max(timestamp) from {self._db_name}.localization group by id limit 10"
+        sql_cmd = f"select id, max(timestamp) from {self._db_name}.localization"
+
+        if id_starts_with:
+            sql_cmd = sql_cmd + f" where startsWith(id, '{id_starts_with}')"
+
+        sql_cmd = sql_cmd + f" group by id limit {limit}"
         logger.info(f'SQL CMD: {sql_cmd}')
         devices_timestamps_list = self.client.execute(sql_cmd)
         # The method returns List of Tuples

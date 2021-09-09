@@ -1,5 +1,5 @@
 ### Real data API
 ```
 docker-compose build
-docker-compose up
+docker-compose --env-file .env up -d
 ```
