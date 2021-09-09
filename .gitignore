@@ -2,3 +2,4 @@ ssl/cert.key
 flask_api/.python-version
 .idea
 db
+.env

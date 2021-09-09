@@ -104,38 +104,6 @@ upload_parser.add_argument('secret_key', type=str, location='form', required=Tru
 
 @api.route('/location', endpoint='location')
 class Location(Resource):
-    @api.doc(params={
-        'latitude': 'Latitude of the device',
-        'longitude': 'Longitude of the device',
-        'altitude': 'Altitude of the device',
-        'device_id': 'ID of the device'
-    })
-    @api.response(200, 'Success', localization_model, mimetype='application/json')
-    def get(self):
-        arg_names = {'latitude', 'longitude', 'altitude', 'device_id'}
-        arg_name_to_values = dict()
-
-        for arg_name in arg_names:
-            arg_name_to_values[arg_name] = request.args.get(arg_name, None)
-
-        required_arg_names = {'latitude', 'longitude', 'altitude', 'device_id'}
-
-        for required_arg_name in required_arg_names:
-            if not arg_name_to_values[required_arg_name]:
-                return f'get request is missing parameter "{required_arg_name}"', 500
-
-        data = Data(
-            device_id=arg_name_to_values['device_id'],
-            altitude=float(arg_name_to_values['altitude']),
-            localization=Localization(
-                lat=float(arg_name_to_values['latitude']),
-                lon=float(arg_name_to_values['longitude']),
-                timestamp_str=datetime.now(tz=timezone.utc).strftime(Default.DATETIME_FORMAT)
-            )
-        )
-        clickhouse_client.send_localization(data.device_id, data.localization)
-        return str(data.localization.to_json())
-
     @api.doc(description="Save location data to the database.")
     @api.expect(upload_parser)
     @api.response(500, 'Invalid values')
@@ -149,7 +117,7 @@ class Location(Resource):
         data = Data(
             device_id=args['device_id'],
             altitude=float(args['altitude']),
-            localization=args(
+            localization=Localization(
                 lat=float(args['latitude']),
                 lon=float(args['longitude']),
                 timestamp_str=datetime.now(tz=timezone.utc).strftime(Default.DATETIME_FORMAT)
