@@ -3,3 +3,4 @@ flask_api/.python-version
 .idea
 db
 .env
+__pycache__
