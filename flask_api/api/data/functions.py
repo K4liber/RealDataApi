@@ -5,7 +5,7 @@ from api.data.utils import Default
 
 
 def get_timestamps_range(timestamp_from: Optional[datetime], timestamp_to: Optional[datetime],
-                         max_range: int = 7) -> Tuple[datetime, datetime]:
+                         max_range: int = Default.TIMESTAMPS_RANGE_IN_DAYS) -> Tuple[datetime, datetime]:
     """
 
     :param timestamp_from:
