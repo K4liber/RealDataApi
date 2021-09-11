@@ -10,6 +10,10 @@ from api.utils import logger
 from api.data.utils import Default
 
 
+class Const:
+    DATE_TIME_FORMAT = '%Y-%m-%d %H:%M:%S'
+
+
 class Clickhouse(DBAdapter):
     def __init__(self):
         self._host = os.getenv('CH_CLIENT_HOST')
@@ -61,17 +65,18 @@ class Clickhouse(DBAdapter):
 
         return device_id_to_timestamp
 
-    def get_localizations(self, device_id: str, timestamp_from: Optional[str],
-                          timestamp_to: Optional[str]) -> List[Localization]:
+    def get_localizations(self, device_id: str, timestamp_from: Optional[datetime],
+                          timestamp_to: Optional[datetime]) -> List[Localization]:
         sql_cmd = f"select id, lat, lon, timestamp from {self._db_name}.localization " \
-                  f"where id = '{device_id}' order by timestamp"
+                  f"where id = '{device_id}' "
 
         if timestamp_from:
-            sql_cmd = sql_cmd + f" and timestamp > toDateTime('{timestamp_from}')"
+            sql_cmd = sql_cmd + f" and timestamp > toDateTime('{timestamp_from.strftime(Const.DATE_TIME_FORMAT)}')"
 
         if timestamp_to:
-            sql_cmd = sql_cmd + f" and timestamp < toDateTime('{timestamp_to}')"
+            sql_cmd = sql_cmd + f" and timestamp < toDateTime('{timestamp_to.strftime(Const.DATE_TIME_FORMAT)}')"
 
+        sql_cmd = sql_cmd + f" order by timestamp"
         logger.info(f'SQL CMD: {sql_cmd}')
         localizations_list = self.client.execute(sql_cmd)
         return [
