@@ -38,7 +38,7 @@ class Localizations(Resource):
             device_id = request.args.get('device_id', None)
 
             if not device_id:
-                return f'get request is missing parameter "device_id"'
+                return 'get request is missing parameter "device_id"'
 
             arg_from_str = request.args.get('from', None)
             arg_to_str = request.args.get('to', None)
@@ -99,7 +99,7 @@ class GetLocalization(Resource):
         device_id = request.args.get('device_id', None)
 
         if not device_id:
-            return f'get request is missing parameter "device_id"'
+            return 'get request is missing parameter "device_id"'
 
         localization = clickhouse_client.get_localization(device_id)
         return str(localization.to_json())

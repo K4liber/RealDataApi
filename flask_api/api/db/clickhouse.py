@@ -76,7 +76,7 @@ class Clickhouse(DBAdapter):
         if timestamp_to:
             sql_cmd = sql_cmd + f" and timestamp < toDateTime('{timestamp_to.strftime(Const.DATE_TIME_FORMAT)}')"
 
-        sql_cmd = sql_cmd + f" order by timestamp"
+        sql_cmd = sql_cmd + " order by timestamp"
         logger.info(f'SQL CMD: {sql_cmd}')
         localizations_list = self.client.execute(sql_cmd)
         return [
