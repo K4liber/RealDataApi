@@ -7,6 +7,7 @@ from flask_restx import Api, Resource
 
 from api import SECRET_KEY
 from api.data.entity import Data, Localization, DeviceTimestamp
+from api.data.functions import get_timestamps_range
 from api.db.clickhouse import Clickhouse
 from api.data.utils import Default
 from api.model import localization_fields, device_to_timestamp_fields
@@ -23,32 +24,42 @@ device_to_timestamp_model = api.model('DeviceToTimestamp', device_to_timestamp_f
 
 
 @api.route('/get_localizations', endpoint='get_localizations')
-@api.doc(params={'device_id': 'ID of the device'})
+@api.doc(params={
+    'device_id': 'ID of the device',
+    'from': f'Starting timestamp for localizations of the device. '
+            f'Format={datetime.now().strftime(Default.DATETIME_ARG_FORMAT)}',
+    'to': f'Ending timestamp for localizations of the device. '
+            f'Format={datetime.now().strftime(Default.DATETIME_ARG_FORMAT)}'
+})
 class Localizations(Resource):
     @api.response(200, 'Success', [localization_model])
     def get(self):
-        device_id = request.args.get('device_id', None)
-
-        if not device_id:
-            return f'get request is missing parameter "device_id"'
-
-        timestamp_from = request.args.get('from', None)
-        timestamp_to = request.args.get('to', None)
-
-        if timestamp_from:
-            try:
-                datetime.strptime(timestamp_from, '%Y-%m-%d %H:%M:%S')
-            except ValueError:
-                return f'parameter "from" should have format "2019-01-15 00:00:00"'
-
-        if timestamp_to:
-            try:
-                datetime.strptime(timestamp_to, '%Y-%m-%d %H:%M:%S')
-            except ValueError:
-                return f'parameter "to" should have format "2019-01-15 00:00:00"'
-
         try:
-            localizations = clickhouse_client.get_localizations(device_id, timestamp_from, timestamp_to)
+            device_id = request.args.get('device_id', None)
+
+            if not device_id:
+                return f'get request is missing parameter "device_id"'
+
+            arg_from_str = request.args.get('from', None)
+            arg_to_str = request.args.get('to', None)
+            arg_from = None
+            arg_to = None
+
+            if arg_from_str:
+                try:
+                    arg_from = datetime.strptime(arg_from_str, Default.DATETIME_ARG_FORMAT)
+                except ValueError:
+                    return f'parameter "from" should have format {Default.DATETIME_ARG_FORMAT}'
+
+            if arg_to_str:
+                try:
+                    arg_to = datetime.strptime(arg_to_str, Default.DATETIME_ARG_FORMAT)
+                except ValueError:
+                    return f'parameter "to" should have format {Default.DATETIME_ARG_FORMAT}'
+
+            timestamp_from, timestamp_to = get_timestamps_range(arg_from, arg_to)
+            localizations = clickhouse_client.get_localizations(
+                device_id, timestamp_from, timestamp_to)
         except BaseException as be:
             return f'API exception: {be}', 500
 
