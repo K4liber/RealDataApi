@@ -3,7 +3,7 @@ import os
 
 class Config:
     __secret_key = os.getenv("SECRET_KEY")
-    __port = int(os.getenv("PORT"))
+    __port = int(os.getenv("PORT")) if os.getenv("PORT") else 5000
 
     @classmethod
     @property
