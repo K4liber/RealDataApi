@@ -1,21 +1,27 @@
 import logging
+import os
 from datetime import datetime, timezone
 
 import flask
-from flask import request
+from flask import request, flash
 from flask_restx import Api, Resource
+from werkzeug.datastructures import FileStorage
 
-from api import SECRET_KEY
+from api import Config
 from api.data.entity import Data, Localization, DeviceTimestamp
 from api.data.functions import get_timestamps_range
 from api.db.clickhouse import Clickhouse
 from api.data.utils import Default
 from api.model import localization_fields, device_to_timestamp_fields
+from api.utils import Folder
 
+STATIC_FOLDER = 'static'
+ALLOWED_EXTENSIONS = {'jpg', 'jpeg'}
 FORMAT = '%(asctime)-15s %(levelname)-10s %(message)s'
 logging.basicConfig(level=logging.INFO, format=FORMAT, force=True)
-app = flask.Flask(__name__)
+app = flask.Flask(__name__, static_url_path='', static_folder=f'{STATIC_FOLDER}/')
 app.config["DEBUG"] = True
+app.config['UPLOAD_FOLDER'] = STATIC_FOLDER
 api = Api(app, version='1.0', title="UCantHide API", description='API for the UCantHide project')
 clickhouse_client = Clickhouse()
 
@@ -94,35 +100,36 @@ class DevicesTimestamps(Resource):
 @api.route('/get_localization', endpoint='get_localization')
 @api.doc(params={'device_id': 'ID of the device'})
 class GetLocalization(Resource):
+    @api.response(400, 'Missing "device_id" parameter')
     @api.response(200, 'Success', localization_model, mimetype='application/json')
     def get(self):
         device_id = request.args.get('device_id', None)
 
         if not device_id:
-            return 'get request is missing parameter "device_id"'
+            return 'get request is missing parameter "device_id"', 400
 
         localization = clickhouse_client.get_localization(device_id)
         return str(localization.to_json())
 
 
-upload_parser = api.parser()
-upload_parser.add_argument('latitude', type=float, location='form', required=True)
-upload_parser.add_argument('longitude', type=float, location='form', required=True)
-upload_parser.add_argument('altitude', type=float, location='form', required=True)
-upload_parser.add_argument('device_id', type=str, location='form', required=True)
-upload_parser.add_argument('secret_key', type=str, location='form', required=True)
+location_parser = api.parser()
+location_parser.add_argument('latitude', type=float, location='form', required=True)
+location_parser.add_argument('longitude', type=float, location='form', required=True)
+location_parser.add_argument('altitude', type=float, location='form', required=True)
+location_parser.add_argument('device_id', type=str, location='form', required=True)
+location_parser.add_argument('secret_key', type=str, location='form', required=True)
 
 
 @api.route('/location', endpoint='location')
 class Location(Resource):
     @api.doc(description="Save location data to the database.")
-    @api.expect(upload_parser)
-    @api.response(500, 'Invalid values')
+    @api.expect(location_parser)
+    @api.response(401, 'Wrong secret key')
     @api.response(200, 'Success', localization_model, mimetype='application/json')
     def post(self):
-        args = upload_parser.parse_args()
+        args = location_parser.parse_args()
 
-        if not SECRET_KEY or SECRET_KEY != args['secret_key']:
+        if not Config.secret_key or Config.secret_key != args['secret_key']:
             return f'Wrong secret key = "{args["secret_key"]}"', 401
 
         data = Data(
@@ -138,4 +145,60 @@ class Location(Resource):
         return str(data.localization.to_json()), 200
 
 
-app.run(host='0.0.0.0', port=5000)
+view_parser = api.parser()
+view_parser.add_argument('device_id', type=str, location='form', required=True)
+view_parser.add_argument('secret_key', type=str, location='form', required=True)
+view_parser.add_argument('file', type=FileStorage, location='files', required=True)
+
+
+@api.route('/view', endpoint='view')
+class View(Resource):
+    @api.doc(description="Save image to the database.")
+    @api.expect(view_parser)
+    @api.response(400, 'Invalid values')
+    @api.response(200, 'Success', mimetype='application/json')
+    def post(self):
+        args = view_parser.parse_args()
+
+        if not Config.secret_key or Config.secret_key != args['secret_key']:
+            return f'Wrong secret key = "{args["secret_key"]}"', 401
+
+        if 'file' not in request.files:
+            flash('No file part')
+            return 'No "file" part', 400
+
+        file = request.files['file']
+
+        if file.filename == '':
+            flash('Empty filename')
+            return 'Empty filename', 400
+
+        try:
+            if file:
+                avatar_folder = os.path.join(app.config['UPLOAD_FOLDER'], Folder.AVATAR)
+                filename = os.path.join(avatar_folder, f"{args['device_id']}.jpeg")
+                file.save(filename)
+        except BaseException as be:
+            return f'API exception: {be}', 500
+
+        return 'Successful update', 200
+
+    @api.doc(params={'device_id': 'ID of the device'}, description='Return the most current view of the device')
+    @api.response(400, 'Invalid values')
+    @api.response(200, 'Success', mimetype='image/jpeg')
+    @api.produces(["image/jpeg"])
+    def get(self):
+        device_id = request.args.get('device_id', None)
+
+        if not device_id:
+            return 'get request is missing parameter "device_id"', 400
+
+        avatar_file_path = os.path.join(app.config['UPLOAD_FOLDER'], Folder.AVATAR, f"{device_id}.jpeg")
+
+        if not os.path.isfile(avatar_file_path):
+            return f'There is not view for the device {device_id} yet', 400
+
+        return app.send_static_file(os.path.join(Folder.AVATAR, f"{device_id}.jpeg"))
+
+
+app.run(host='0.0.0.0', port=Config.port)

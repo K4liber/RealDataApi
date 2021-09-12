@@ -1,5 +1,6 @@
 ssl/cert.key
 flask_api/.python-version
+flask_api/static
 .idea
 db
 .env
