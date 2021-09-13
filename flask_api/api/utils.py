@@ -6,4 +6,4 @@ logger = logging.getLogger('flask_api')
 
 
 class Folder:
-    AVATAR = 'view'
+    VIEW = 'view'

@@ -8,6 +8,8 @@ services:
       - CH_DB=real_data
       - SECRET_KEY=${SECRET_KEY}
       - PORT=${PORT}
+    volumes:
+      - ./flask_api/static:/static
     networks:
       - default
       - ch_ntw
