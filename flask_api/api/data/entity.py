@@ -8,10 +8,11 @@ from api.data.utils import Default
 
 
 @dataclass_json(letter_case=LetterCase.SNAKE)
-@dataclass
-class DeviceTimestamp:
+@dataclass(frozen=True)
+class DeviceTimestampsRange:
     device_id: str
-    timestamp_str: str
+    timestamp_from: str
+    timestamp_to: str
 
 
 @dataclass_json(letter_case=LetterCase.SNAKE)

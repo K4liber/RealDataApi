@@ -1,4 +1,5 @@
 import logging
+import operator
 import os
 from datetime import datetime, timezone
 
@@ -8,11 +9,11 @@ from flask_restx import Api, Resource
 from werkzeug.datastructures import FileStorage
 
 from api import Config
-from api.data.entity import Data, Localization, DeviceTimestamp
+from api.data.entity import Data, Localization
 from api.data.functions import get_timestamps_range
 from api.db.clickhouse import Clickhouse
 from api.data.utils import Default
-from api.model import localization_fields, device_to_timestamp_fields
+from api.model import localization_fields, device_timestamps_range_fields
 from api.utils import Folder
 
 STATIC_FOLDER = 'static'
@@ -26,7 +27,7 @@ api = Api(app, version='1.0', title="UCantHide API", description='API for the UC
 clickhouse_client = Clickhouse()
 
 localization_model = api.model('Localization', localization_fields)
-device_to_timestamp_model = api.model('DeviceToTimestamp', device_to_timestamp_fields)
+device_timestamps_range_model = api.model('DeviceToTimestamp', device_timestamps_range_fields)
 
 
 @api.route('/get_localizations', endpoint='get_localizations')
@@ -74,25 +75,22 @@ class Localizations(Resource):
         ])
 
 
-@api.route('/get_devices_timestamps', endpoint='get_devices_timestamps')
+@api.route('/get_devices_timestamps_range', endpoint='get_devices_timestamps_range')
 @api.doc(params={'id_starts_with': 'Start of the device`s ID (optional)'})
-class DevicesTimestamps(Resource):
-    @api.response(200, 'Success', [device_to_timestamp_model], mimetype='application/json')
+class DevicesTimestampsRange(Resource):
+    @api.response(200, 'Success', [device_timestamps_range_model], mimetype='application/json')
     def get(self):
         try:
-            device_id_to_timestamp = clickhouse_client.get_device_id_to_timestamp(
+            device_timestamps_range = clickhouse_client.get_device_timestamps_range(
                 request.args.get('id_starts_with', None)
             )
         except BaseException as be:
             return f'API exception: {be}', 500
 
-        sorted_values = {k: v for k, v in sorted(device_id_to_timestamp.items(), key=lambda item: item[1])}
         return str(
             [
-                DeviceTimestamp(
-                    device_id=device_id,
-                    timestamp_str=timestamp.strftime(Default.DATETIME_FORMAT)
-                ).to_json() for device_id, timestamp in sorted_values.items()
+                value.to_json() for value in
+                sorted(device_timestamps_range, key=operator.attrgetter('timestamp_to'))
             ]
         )
 
@@ -230,4 +228,4 @@ class View(Resource):
         return f'There is not any view for the timestamp {timestamp}.', 400
 
 
-app.run(host='0.0.0.0', port=Config.port)
+app.run(host='0.0.0.0', port=Config.port())

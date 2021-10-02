@@ -10,7 +10,8 @@ localization_fields = {
     "timestamp_str": fields.String(example=datetime.now().strftime(Default.DATETIME_FORMAT))
 }
 
-device_to_timestamp_fields = {
+device_timestamps_range_fields = {
     "device_id": fields.String(example="85471171"),
-    "timestamp_str": fields.String(example=datetime.now().strftime(Default.DATETIME_FORMAT))
+    "timestamp_from": fields.String(example=datetime.now().strftime(Default.DATETIME_FORMAT)),
+    "timestamp_to": fields.String(example=datetime.now().strftime(Default.DATETIME_FORMAT))
 }

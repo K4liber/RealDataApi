@@ -1,8 +1,7 @@
 from abc import abstractmethod
-from datetime import datetime
-from typing import Optional, List, Dict
+from typing import Optional, List, Set
 
-from api.data.entity import Localization
+from api.data.entity import Localization, DeviceTimestampsRange
 
 
 class DBAdapter:
@@ -16,7 +15,8 @@ class DBAdapter:
     def get_device_ids(self) -> List[str]:
         pass
 
-    def get_device_id_to_timestamp(self, id_starts_with: Optional[str] = None, limit: int = 10) -> Dict[str, datetime]:
+    def get_device_timestamps_range(self, id_starts_with: Optional[str] = None, limit: int = 10) \
+            -> Set[DeviceTimestampsRange]:
         pass
 
     def get_localizations(self, device_id: str, timestamp_from: Optional[str],

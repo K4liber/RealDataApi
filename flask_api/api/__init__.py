@@ -11,6 +11,5 @@ class Config:
         return Config.__secret_key
 
     @classmethod
-    @property
     def port(cls) -> int:
         return Config.__port
