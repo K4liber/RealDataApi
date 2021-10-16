@@ -2,10 +2,11 @@ import logging
 import operator
 import os
 from datetime import datetime, timezone
+from typing import List
 
 import flask
 from flask import request, flash
-from flask_restx import Api, Resource
+from flask_restx import Api, Resource, fields
 from werkzeug.datastructures import FileStorage
 
 from api import Config
@@ -14,7 +15,7 @@ from api.data.functions import get_timestamps_range
 from api.db.clickhouse import Clickhouse
 from api.data.utils import Default
 from api.model import localization_fields, device_timestamps_range_fields
-from api.utils import Folder
+from api.utils import Folder, get_sorted_views
 
 STATIC_FOLDER = 'static'
 ALLOWED_EXTENSIONS = {'jpg', 'jpeg'}
@@ -214,18 +215,38 @@ class View(Resource):
         if not device_id:
             return 'Get request is missing parameter "device_id"', 400
 
-        device_view_path_str = str(os.path.join(app.config['UPLOAD_FOLDER'], Folder.VIEW, device_id))
+        sorted_views = get_sorted_views(app.config['UPLOAD_FOLDER'], device_id)
 
-        if not os.path.isdir(device_view_path_str):
+        if len(sorted_views) == 0:
             return f'There is not any view for the device {device_id} yet.', 400
 
-        sorted_views = sorted(os.listdir(device_view_path_str), reverse=True)
-
         for index, filename in enumerate(sorted_views):
-            if timestamp > filename:
+            view_timestamp = filename.split('.')[0]
+
+            if timestamp >= view_timestamp:
                 return app.send_static_file(os.path.join(Folder.VIEW, device_id, filename))
 
         return f'There is not any view for the timestamp {timestamp}.', 400
+
+
+@api.route('/get_view_history', endpoint='get_view_history')
+@api.doc(params={'device_id': 'ID of the device'})
+class GetViewHistory(Resource):
+    @api.response(400, 'Missing "device_id" parameter')
+    @api.response(200, 'Success', fields.List(fields.String(example="2021-10-14-02-00-00")),
+                  mimetype='application/json')
+    def get(self):
+        device_id = request.args.get('device_id', None)
+
+        if not device_id:
+            return 'get request is missing parameter "device_id"', 400
+
+        sorted_views = get_sorted_views(app.config['UPLOAD_FOLDER'], device_id)
+
+        if len(sorted_views) == 0:
+            return f'There is not any view for the device {device_id} yet.', 400
+
+        return sorted_views
 
 
 app.run(host='0.0.0.0', port=Config.port())
