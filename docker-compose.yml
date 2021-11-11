@@ -38,18 +38,6 @@ services:
     networks:
       - ch_ntw
 
-  ch_client:
-    container_name: ch_client
-    image: yandex/clickhouse-client
-    entrypoint:
-      - /bin/sleep
-    command:
-      - infinity
-    networks:
-      - ch_ntw
-    depends_on:
-      - ch_server
-
 networks:
   ch_ntw:
     driver: bridge
