@@ -14,7 +14,7 @@ services:
       - default
       - ch_ntw
     depends_on:
-      - ch_client
+      - ch_server
 
   api_nginx:
     container_name: api_nginx
