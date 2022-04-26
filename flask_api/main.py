@@ -24,7 +24,7 @@ logging.basicConfig(level=logging.INFO, format=FORMAT, force=True)
 app = flask.Flask(__name__, static_url_path='', static_folder=f'{STATIC_FOLDER}/')
 app.config["DEBUG"] = True
 app.config['UPLOAD_FOLDER'] = STATIC_FOLDER
-api = Api(app, version='1.0', title="UCantHide API", description='API for the UCantHide project')
+api = Api(app, version='1.0', title="World Citizen API", description='API for the World Citizen project')
 clickhouse_client = Clickhouse()
 
 localization_model = api.model('Localization', localization_fields)
@@ -220,7 +220,7 @@ class View(Resource):
         if len(sorted_views) == 0:
             return f'There is not any view for the device {device_id} yet.', 400
 
-        for index, filename in enumerate(sorted_views):
+        for filename in sorted_views:
             view_timestamp = filename.split('.')[0]
 
             if timestamp >= view_timestamp:

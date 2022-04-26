@@ -3,7 +3,7 @@ from flask import json
 from main import api
 from main import app
 
-app.config["SERVER_NAME"] = "ucanthide.eu"
+app.config["SERVER_NAME"] = "worldcitizen.link"
 app.app_context().__enter__()
 
 with open('api_swagger.json', 'w') as doc_file:
